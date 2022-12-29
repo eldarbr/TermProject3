@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -59,13 +61,18 @@ struct TicketsList {
 		}
 		firstElement = element;
 	}
+
+	void AddTicket(int id) {
+		TicketsListElement* newTicket = new TicketsListElement{ id, firstElement };
+		firstElement = newTicket;
+	}
 };
 
 
 class CarOwner
 {
 
-	string name;
+	string name = "";
 	tm birthday;
 	string phoneNumber = "";
 	unsigned int drivingLicence = 0;
@@ -81,11 +88,14 @@ class CarOwner
 
 
 
-	// default constructor
-	CarOwner() { };
+
 
 
 public:
+
+	// default constructor
+	CarOwner() { };
+
 
 	// simple constructor for tests
 	CarOwner(string name) {
@@ -143,6 +153,26 @@ public:
 
 	// setter for nextOwner
 	void setNextOwner(CarOwner* owner) { nextOwner = owner; }
+	// setter for birthday
+	void setBirthday(tm bday) { birthday = bday; }
+	// setter for drivingLicence
+	void setDrivingLicence(int id) { drivingLicence = id; }
+	// setter for drivingLicenceExpiry
+	void setDrivingLicenceExpiry(tm timestamp) { drivingLicenceExpiry = timestamp; }
+	// setter for gibddId
+	void setGibddId(int id) { gibddId = id; }
+	// setter for name
+	void setName(string name) { this->name = name; }
+	// setter for phoneNumber
+	void setPhoneNumber(string phoneNumber) { this->phoneNumber = phoneNumber; }
+	// setter for carLicencePlate
+	void setCarLicencePlate(string carLicencePlate) { this->carLicencePlate = carLicencePlate; }
+	// setter for techPassport
+	void setTechPassportId(string techPassportId) { this->techPassportId = techPassportId; }
+
+
+	void addTicket(int ticketId) { this->ticketsList.AddTicket(ticketId); }
+
 
 
 	unsigned int GetLength() {
@@ -151,7 +181,75 @@ public:
 	}
 
 
+
+
 };
+
+istream& operator>>(istream& is, CarOwner* owner)
+{
+
+	string name, phoneNumber, bdD, bdM, bdY, licId,
+		licED, licEM, licEY, gbddId, tckts, carLicencePlate,
+		techPassportId;
+	if (getline(is, name, ';') &&
+		getline(is, bdD, ';') &&
+		getline(is, bdM, ';') &&
+		getline(is, bdY, ';') &&
+		getline(is, phoneNumber, ';') &&
+		getline(is, licId, ';') &&
+		getline(is, licED, ';') &&
+		getline(is, licEM, ';') &&
+		getline(is, licEY, ';') &&
+		getline(is, carLicencePlate, ';') &&
+		getline(is, techPassportId, ';') &&
+		getline(is, gbddId, ';') &&
+		getline(is, tckts)) {
+
+
+		owner->setName(name);
+		owner->setPhoneNumber(phoneNumber);
+		owner->setCarLicencePlate(carLicencePlate);
+		owner->setTechPassportId(techPassportId);
+		owner->setGibddId(stoi(gbddId));
+
+		owner->setBirthday(tm{ 0,0,0,stoi(bdD),stoi(bdM) - 1,stoi(bdY) - 1900 });
+		owner->setDrivingLicence(stoi(licId));
+		owner->setDrivingLicenceExpiry(tm{ 0,0,0,stoi(licED),stoi(licEM),stoi(licEY) });
+
+
+		int f;
+		stringstream ss(tckts);
+		while ((ss >> f))
+			owner->addTicket(f);
+
+
+
+	}
+	return is;
+}
+
+ostream& operator<<(ostream& out, CarOwner* owner) {
+	out << "Name:\t\t" << owner->getName() << endl;
+	out << "Bithday:\t" << owner->getBirthdayStr() << endl;
+	out << "Phone number:\t" << owner->getPhoneNumber() << endl;
+	out << "Dr. licence:\t" << owner->getDrivingLicence() << endl;
+	out << "Dr. l. expiry:\t" << owner->getDrivingLicenceExpiryStr() << endl;
+	out << "GIBDD id:\t" << owner->getGibddId() << endl;
+	out << "Licence plate:\t" << owner->getCarLicencePlate() << endl;
+	out << "Tech passport:\t" << owner->getTechPassportId() << endl;
+	TicketsList tl = owner->getTicketsList();
+	if (tl.firstElement) {
+		out << "Tickets id:\t";
+		TicketsListElement* leel = tl.firstElement;
+		while (leel) {
+			out << leel->ticketId << " ";
+			leel = leel->nextElement;
+		}
+	}
+	return out;
+}
+
+
 
 
 struct CarOwnersList {
@@ -213,7 +311,7 @@ struct CarOwnersList {
 class Ticket
 {
 
-	unsigned int id;
+	int id;
 	tm timestamp;
 	string carLicencePlate;
 	bool isPaid;
@@ -221,6 +319,10 @@ class Ticket
 public:
 	// default constructor
 	Ticket() {};
+
+	Ticket(int id) {
+		this->id = id;
+	}
 
 	// class constructor
 	Ticket(unsigned int id, tm timestamp, string carLicencePlate, bool isPaid = false)
@@ -243,16 +345,60 @@ public:
 	// getter for isPaid
 	bool getIsPaid() { return isPaid; }
 
+	// setter for name
+	void setId(unsigned int id) { this->id = id; }
+	// setter for timestamp
+	void setTimestamp(tm timestamp) { this->timestamp = timestamp; }
+	// setter for carLicencePlate
+	void setCarLicencePlate(string carLicencePlate) { this->carLicencePlate = carLicencePlate; }
+	// setter for isPaid
+	void setIsPaid(bool isPaid) { this->isPaid = isPaid; }
+
 };
+
+
+
+istream& operator>>(istream& is, Ticket* ticket) {
+	string id, carLPlate, isPaid, tmMn, tmH, tmD, tmM, tmY;
+
+	if (getline(is, id, ';') &&
+		getline(is, tmMn, ';') &&
+		getline(is, tmH, ';') &&
+		getline(is, tmD, ';') &&
+		getline(is, tmM, ';') &&
+		getline(is, tmY, ';') &&
+		getline(is, carLPlate, ';') &&
+		getline(is, isPaid)) {
+
+		ticket->setId(stoi(id));
+		ticket->setCarLicencePlate(carLPlate);
+		ticket->setIsPaid((isPaid) == "1" ? true : false);
+		ticket->setTimestamp(tm{ 0,stoi(tmMn),stoi(tmH),stoi(tmD),stoi(tmM) - 1,stoi(tmY) - 1900 });
+
+	}
+	return is;
+}
+
+
+ostream& operator<<(ostream& out, Ticket* ticket) {
+	out << "Ticket ID:\t" << ticket->getId()
+		<< "\nLicence pl:\t" << ticket->getLicencePlate()
+		<< "\nTimestamp:\t" << ticket->getTimestampStr()
+		<< "\nIs paid:\t" << (ticket->getIsPaid() ? "yes" : "no");
+	return out;
+}
+
+
+
 
 
 struct TicketsTreeElement // структура для представления узлов дерева
 {
 	Ticket ticket;
 	int size;
-	TicketsTreeElement* rightChild ;
+	TicketsTreeElement* rightChild;
 	TicketsTreeElement* leftChild;
-	
+
 	TicketsTreeElement(Ticket ticket) {
 		this->ticket = ticket;
 		rightChild = 0;
@@ -261,7 +407,7 @@ struct TicketsTreeElement // структура для представления узлов дерева
 	}
 };
 
-int GetTreeSize(TicketsTreeElement* p) 
+int GetTreeSize(TicketsTreeElement* p)
 {
 	if (!p) return 0;
 	return p->size;
@@ -284,7 +430,7 @@ TicketsTreeElement* FindTicket(TicketsTreeElement* tree, int id)
 		return FindTicket(tree->rightChild, id);
 }
 
-TicketsTreeElement* RotateTreeRight(TicketsTreeElement* tree) 
+TicketsTreeElement* RotateTreeRight(TicketsTreeElement* tree)
 {
 	TicketsTreeElement* q = tree->leftChild;
 	if (!q) return tree;
@@ -419,6 +565,7 @@ public:
 
 
 	void InsertToTable(CarOwner* owner) {
+		if (owner->getName() == "") throw "wrong name - can't hash";
 		int index = Hash(*owner);
 		arr[index].InsertToList(owner);
 	}
@@ -469,7 +616,7 @@ public:
 			}
 		}
 		analytics.fillingRate = (float)analytics.filling / analytics.capacity;
-		analytics.collisionsRate = (float)analytics.collisions / analytics.capacity;
+		analytics.collisionsRate = (float)analytics.collisions / analytics.population;
 		return analytics;
 	}
 
@@ -528,15 +675,24 @@ public:
 	}
 
 	static void OutputCarOwner(CarOwner owner) {
-		cout << "Name:\t\t" << owner.getName() << endl;
-		cout << "Bithday:\t" << owner.getBirthdayStr() << endl;
-		cout << "Phone number:\t" << owner.getPhoneNumber() << endl;
-		cout << "Dr. licence:\t" << owner.getDrivingLicence() << endl;
-		cout << "Dr. l. expiry:\t" << owner.getDrivingLicenceExpiryStr() << endl;
-		cout << "GIBDD id:\t" << owner.getGibddId() << endl;
-		cout << "Licence plate:\t" << owner.getCarLicencePlate() << endl;
-		cout << "Tech passport:\t" << owner.getTechPassportId() << endl;
+		cout << &owner;
 	}
+
+	static void OutputTicketsListElements(TicketsListElement* tle) {
+		while (tle) {
+
+		}
+	}
+
+	static void OutputTicketFromTree(TicketsTreeElement* tree, int ticketId) {
+		Ticket t = FindTicket(tree, ticketId)->ticket;
+		cout << "id:\t" << t.getId()
+			<< "\nplate:\t" << t.getLicencePlate()
+			<< "\ntime:\t" << t.getTimestampStr()
+			<< "\npaid?\t" << (t.getIsPaid() ? "yes" : "no")
+			<< endl;
+	}
+
 
 	static void OutputHashTableAnalytics(HashTableAnalytics analytics) {
 		cout << "Capacity:\t" << analytics.capacity
@@ -548,6 +704,112 @@ public:
 			<< endl;
 	}
 
+};
+
+
+class ConsoleInterfaceMenu {
+	enum UserScenarios { Initial, Menu };
+public:
+	static void InitialMenu() {
+		setlocale(LC_ALL, "rus");
+
+		int scenario;
+
+		OwnersHashTable hashTable = OwnersHashTable();
+		TicketsTreeElement* ticketsTree = new TicketsTreeElement(Ticket(-1));
+
+		do {
+			if (hashTable.GetAnalytics().population != 0) {		// список задан
+				system("cls");
+				cout
+					<< "\nЧто вы хотите сделать?\n"
+					<< "1. Вывести всю хэш-таблицу на экран\n"
+					<< "2. Найти в владельца хэш-таблице\n"
+					<< "3. Добавить владельца в хэш-таблицу\n"
+					<< "4. Удалить владельца из хэш-таблицы\n"
+					<< "5. Очистить хэш-таблицу\n"
+					<< "6. Найти штраф\n"
+					<< "7. Добавить штраф\n"
+					<< "8. Удалить штраф\n"
+					<< "9. Очистить штрафы\n"
+					<< "10.Выйти\n"
+					<< "> ";
+				scenario = InputUsersChoice(Menu);
+				switch (scenario) {
+				case 1:
+					
+					system("pause");
+					break;
+				case 2:
+					
+					system("pause");
+					break;
+				case 3:
+					
+					break;
+				case 4:
+					system("pause");
+					break;
+				case 5:
+					system("pause");
+					break;
+				case 6:
+					system("pause");
+					break;
+				case 7:
+					system("pause");
+					break;
+				case 8:
+					system("pause");
+					break;
+				case 9:
+					system("pause");
+					break;
+				}
+			}
+			else {					// список не задан
+				system("cls");
+				cout << "\tЧто вы хотите сделать?\n"
+					<< "1. Создать пустые структуры\n"
+					<< "2. Прочитать данные из файлов\n"
+					<< "3. Выход\n"
+					<< "> ";
+				scenario = InputUsersChoice(Initial);
+				switch (scenario)
+				{
+				case 1:
+					system("pause");
+					break;
+
+				case 2:
+					system("pause");
+					break;
+				case 3:
+					system("pause");
+					break;
+				}
+			}
+		} while (scenario != 10 && hashTable.GetAnalytics().population
+			|| scenario != 2 && hashTable.GetAnalytics().population);
+	}
+
+	static int InputUsersChoice(UserScenarios scenario) {
+		int variant;
+		cin >> variant;
+		if (scenario == Initial) {
+			while (variant < 1 || variant > 3) {
+				cout << "Wrong input. Try again > ";
+				cin >> variant;
+			}
+		}
+		else if (scenario == Menu) {
+			while (variant < 1 || variant>10) {
+				cout << "Wrong input. Try again > ";
+				cin >> variant;
+			}
+		}
+		return variant;
+	}
 };
 
 
@@ -600,24 +862,24 @@ int main()
 	ht.DeleteArray();
 	*/
 
-	/* HASH TABLE DEMO */
-	CarOwner* c1 = new CarOwner("Eldar", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+	/* HASH TABLE DEMO
+	CarOwner* c1 = new CarOwner("Eldar", tm{ 0,0,0,1,0,21 },
+		"+79257093991", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+		"YPP122", 1222, new int[2]{ 1,2 }, 2);
+	CarOwner* c2 = new CarOwner("Nail", tm{ 0,0,0,1,0,22 },
+		"+79257093992", 123, tm{ 0,0,0,2,1,123 }, "o944xe124",
 		"YPP122", 1222);
-	CarOwner* c2 = new CarOwner("Nail", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+	CarOwner* c3 = new CarOwner("Alina", tm{ 0,0,0,1,0,23 },
+		"+79257093993", 123, tm{ 0,0,0,3,1,123 }, "o944xe124",
 		"YPP122", 1222);
-	CarOwner* c3 = new CarOwner("Alina", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+	CarOwner* c4 = new CarOwner("Anton", tm{ 0,0,0,1,0,24 },
+		"+79257093994", 123, tm{ 0,0,0,4,1,123 }, "o944xe124",
 		"YPP122", 1222);
-	CarOwner* c4 = new CarOwner("Anton", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+	CarOwner* c5 = new CarOwner("Pasha", tm{ 0,0,0,1,0,25 },
+		"+79257093995", 123, tm{ 0,0,0,5,1,123 }, "o944xe124",
 		"YPP122", 1222);
-	CarOwner* c5 = new CarOwner("Pasha", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c6 = new CarOwner("Andrey", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
+	CarOwner* c6 = new CarOwner("Andrey", tm{ 0,0,0,1,0,26 },
+		"+79257093996", 123, tm{ 0,0,0,6,1,123 }, "o944xe124",
 		"YPP122", 1222);
 
 	OwnersHashTable ht = OwnersHashTable(10);
@@ -636,7 +898,21 @@ int main()
 	an = ht.GetAnalytics();
 	ConsoleInterface::OutputHashTableAnalytics(an);
 
-	//*/
+	Ticket t1 = Ticket(0, tm{ 0,13,14,14,1,45 }, "0944xe124");
+	TicketsTreeElement* tree = new TicketsTreeElement(t1);
+
+	Ticket t2 = Ticket(1, tm{ 0,3,4,1,4,47 }, "0944xe124");
+	tree = TreeRandomisedInsert(tree, t2);
+
+
+	cout << endl << endl;
+
+	ConsoleInterface::OutputTicketFromTree(tree, 1);
+	cout << endl;
+	ConsoleInterface::OutputTicketFromTree(tree, 0);
+
+
+	*/
 
 	/* CAR OWNERS LIST DEMO
 	*
@@ -673,4 +949,14 @@ int main()
 
 	ConsoleInterface::OutputCarOwnersList(cl);
 	*/
+
+	CarOwner* c1 = new CarOwner();
+	cin >> c1;
+
+	cout << c1;
+	cout << endl;
+	Ticket* t1 = new Ticket();
+	cin >> t1;
+	cout << endl;
+	cout << t1;
 }
