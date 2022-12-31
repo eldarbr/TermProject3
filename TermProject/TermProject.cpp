@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 using namespace std;
 
@@ -246,6 +247,7 @@ ostream& operator<<(ostream& out, CarOwner* owner) {
 			leel = leel->nextElement;
 		}
 	}
+	out << endl;
 	return out;
 }
 
@@ -256,9 +258,12 @@ struct CarOwnersList {
 	CarOwner* firstOwner = NULL;
 
 
-	void InsertToList(CarOwner* owner) {
+	bool InsertToList(CarOwner* owner) {
+		bool collision = false;
+		if (firstOwner) { collision = true; }
 		owner->setNextOwner(firstOwner);
 		firstOwner = owner;
+		return collision;
 	}
 
 	void DeleteList() {
@@ -269,22 +274,29 @@ struct CarOwnersList {
 		}
 	}
 
-	void DeleteFromList(string name) {
+	char DeleteFromList(string name) {
+		///
+		///	0 - didn't delete
+		/// 1 - did delete, nothing else
+		/// 2 - did delete, list contains something else
+		/// 
+
 		CarOwner* tmp = firstOwner;
 		// empty list
 		if (!tmp) {
-			return;
+			return 0;
 		}
 		// element for deleting is first
 		else if (tmp->getName() == name) {
 			tmp = firstOwner->getNextOwner();
 			delete firstOwner;
 			firstOwner = tmp;
-			return;
+			if (tmp) { return 2; }
+			return 1;
 		}
 		// list contains only one element
 		else if (!tmp->getNextOwner()) {
-			return;
+			return 0;
 		}
 		else {
 			while (tmp->getNextOwner()) {
@@ -292,13 +304,15 @@ struct CarOwnersList {
 					CarOwner* buff = tmp->getNextOwner()->getNextOwner();
 					delete tmp->getNextOwner();
 					tmp->setNextOwner(buff);
-					return;
+					if (buff) { return 2; }
+					return 1;
 				}
 				else {
 					tmp = tmp->getNextOwner();
 				}
 			}
 		}
+		return 0;
 	}
 
 	unsigned int GetLength() {
@@ -325,7 +339,7 @@ public:
 	}
 
 	// class constructor
-	Ticket(unsigned int id, tm timestamp, string carLicencePlate, bool isPaid = false)
+	Ticket(int id, tm timestamp, string carLicencePlate, bool isPaid = false)
 	{
 		this->id = id;
 		this->timestamp = timestamp;
@@ -334,7 +348,7 @@ public:
 	}
 
 	// getter for id
-	unsigned int getId() { return id; }
+	int getId() { return id; }
 	// getter for timestamp
 	tm getTimestamp() { return timestamp; }
 	string getTimestampStr() {
@@ -346,7 +360,7 @@ public:
 	bool getIsPaid() { return isPaid; }
 
 	// setter for name
-	void setId(unsigned int id) { this->id = id; }
+	void setId(int id) { this->id = id; }
 	// setter for timestamp
 	void setTimestamp(tm timestamp) { this->timestamp = timestamp; }
 	// setter for carLicencePlate
@@ -381,10 +395,12 @@ istream& operator>>(istream& is, Ticket* ticket) {
 
 
 ostream& operator<<(ostream& out, Ticket* ticket) {
+	if (!ticket) { return out; }
 	out << "Ticket ID:\t" << ticket->getId()
 		<< "\nLicence pl:\t" << ticket->getLicencePlate()
 		<< "\nTimestamp:\t" << ticket->getTimestampStr()
 		<< "\nIs paid:\t" << (ticket->getIsPaid() ? "yes" : "no");
+	out << endl;
 	return out;
 }
 
@@ -473,7 +489,7 @@ TicketsTreeElement* TreeInsertToRoot(TicketsTreeElement* tree, Ticket t)
 TicketsTreeElement* TreeRandomisedInsert(TicketsTreeElement* p, Ticket t)
 {
 	if (!p) return new TicketsTreeElement(t);
-	if (rand() % (p->size + 1) == 0)
+	if (rand() % (p->size + 1) == 0 && p->ticket.getId() >= 0)
 		return TreeInsertToRoot(p, t);
 	if (p->ticket.getId() > t.getId())
 		p->leftChild = TreeRandomisedInsert(p->leftChild, t);
@@ -502,7 +518,18 @@ TicketsTreeElement* TreeJoinNodes(TicketsTreeElement* p, TicketsTreeElement* q) 
 	}
 }
 
-
+void EmptyTree(TicketsTreeElement* p) {
+	if (p->leftChild) {
+		EmptyTree(p->leftChild);
+		delete p->leftChild;
+		p->leftChild = NULL;
+	}
+	if (p->rightChild) {
+		EmptyTree(p->rightChild);
+		delete p->rightChild;
+		p->rightChild = NULL;
+	}
+}
 
 TicketsTreeElement* TreeRemoveNode(TicketsTreeElement* p, int id) // удаление из дерева p первого найденного узла с ключом k 
 {
@@ -521,13 +548,78 @@ TicketsTreeElement* TreeRemoveNode(TicketsTreeElement* p, int id) // удаление из
 }
 
 
+
+struct Trunk
+{
+	Trunk* prev;
+	string str;
+
+	Trunk(Trunk* prev, string str)
+	{
+		this->prev = prev;
+		this->str = str;
+	}
+};
+
+void ShowTrunks(Trunk* p)
+{
+	if (p == nullptr) {
+		return;
+	}
+	ShowTrunks(p->prev);
+	cout << p->str;
+}
+
+
+
+
+void PrintTree(TicketsTreeElement* root, Trunk* prev = NULL, bool isLeft = false)
+{
+	if (root == NULL) {
+		return;
+	}
+	string prev_str = "    ";
+	Trunk* trunk = new Trunk(prev, prev_str);
+	PrintTree(root->rightChild, trunk, true);
+	if (!prev) {
+		trunk->str = "---";
+	}
+	else if (isLeft)
+	{
+		trunk->str = ".---";
+		prev_str = "   |";
+	}
+	else {
+		trunk->str = "`---";
+		prev->str = prev_str;
+	}
+	ShowTrunks(trunk);
+	if (root->ticket.getId() < 0) {
+		cout << " root" << endl;
+	}
+	else {
+		cout << " " << root->ticket.getId() << endl;
+	}
+	if (prev) {
+		prev->str = prev_str;
+	}
+	trunk->str = "   |";
+
+	PrintTree(root->leftChild, trunk, false);
+}
+
+
+
+
+
+
 struct HashTableAnalytics {
 	unsigned int capacity = 0;
 	unsigned int population = 0;
 	unsigned int filling = 0;
 	unsigned int collisions = 0;
-	double fillingRate = 0;
-	double collisionsRate = 0;
+	double fillingRate = 0;			// will be out of date until GetAnalytics() is called
+	double collisionsRate = 0;		// will be out of date until GetAnalytics() is called
 };
 
 
@@ -535,8 +627,13 @@ class OwnersHashTable {
 	unsigned int capacity = 100;
 	CarOwnersList* arr = NULL;
 
-	const double fillingRateLimit = 0.8;
-	const double collisionsRatelimit = 0.4;
+
+
+	HashTableAnalytics analytics = HashTableAnalytics();
+
+	const double fillingRateUpperLimit = 0.8;
+	const double collisionsRateUpperlimit = 0.4;
+	const double fillingRateLowerLimit = 0.1;
 
 
 public:
@@ -547,32 +644,57 @@ public:
 	}
 
 	OwnersHashTable(int capacity) {
+		if (capacity % 13 == 0) { capacity++; }
+		int last_capacity = this->capacity;
 		this->capacity = capacity;
-		SetupArray();
+		try {
+			SetupArray();
+		}
+		catch (...) {
+			this->capacity = last_capacity;
+		}
 	}
 
-
 	void SetupArray() {
+		if (arr) { throw "there is already an array"; }
 		arr = new CarOwnersList[capacity];
 	}
 
-	void DeleteArray() {
-		for (int i = 0; i < capacity; i++) {
-			arr[i].DeleteList();
+	void DeleteArray(bool deleteLists = false) {
+		if (deleteLists) {
+			for (int i = 0; i < capacity; i++) {
+				arr[i].DeleteList();
+			}
 		}
 		delete arr;
+		arr = NULL;
+		analytics = HashTableAnalytics();
 	}
 
 
 	void InsertToTable(CarOwner* owner) {
 		if (owner->getName() == "") throw "wrong name - can't hash";
+		analytics.population++;
 		int index = Hash(*owner);
-		arr[index].InsertToList(owner);
+		if (arr[index].InsertToList(owner)) {
+			analytics.collisions++;
+		}
+		else {
+			analytics.filling += 1;
+		}
 	}
 
 	void DeleteFromTable(string name) {
 		int index = Hash(name);
-		arr[index].DeleteFromList(name);
+		char result = arr[index].DeleteFromList(name);
+		if (result == 1) {
+			analytics.population--;
+			analytics.filling--;
+		}
+		else if (result == 2) {
+			analytics.collisions--;
+			analytics.population--;
+		}
 	}
 
 	CarOwnersList GetOwnersByIndex(int index) {
@@ -597,7 +719,7 @@ public:
 			int p = i % 7 + 1;
 			p = pow(13, p);
 			int ascii = int(name[i]) - 64;
-			hash = p * ascii;
+			hash += p * ascii;
 		}
 		return hash % capacity;
 	}
@@ -606,43 +728,45 @@ public:
 
 
 	HashTableAnalytics GetAnalytics() {
-		HashTableAnalytics analytics{ capacity };
-		for (int i = 0; i < capacity; i++) {
-			unsigned int length = arr[i].GetLength();
-			analytics.population += length;
-			if (length > 0) {
-				analytics.filling++;
-				analytics.collisions += length - 1;
-			}
-		}
+		analytics.capacity = this->capacity;
 		analytics.fillingRate = (float)analytics.filling / analytics.capacity;
 		analytics.collisionsRate = (float)analytics.collisions / analytics.population;
 		return analytics;
 	}
 
-	OwnersHashTable Rehash() {
-		OwnersHashTable ht = OwnersHashTable(GetAnalytics().population * 2);
-		for (int i = 0; i < capacity; i++) {
-			CarOwner* owner = arr[i].firstOwner;
-			while (owner) {
-				ht.InsertToTable(owner);
-				owner = owner->getNextOwner();
+	void Rehash(int newCapacity = 0) {
+		if (newCapacity < 0) throw "wrong capacity";
+		if (!newCapacity) newCapacity = GetAnalytics().population * 2;
+		OwnersHashTable ht = OwnersHashTable(newCapacity);
+		if (arr) {
+			for (int i = 0; i < capacity; i++) {
+				CarOwner* owner = arr[i].firstOwner;
+				while (owner) {
+					ht.InsertToTable(owner);
+					owner = owner->getNextOwner();
+				}
 			}
+			DeleteArray();
 		}
-		return ht;
+		this->arr = ht.getArray();
+		this->capacity = ht.getCapacity();
 	}
+
 
 	bool RehashPending() {
 		HashTableAnalytics an = GetAnalytics();
-		if (an.fillingRate > fillingRateLimit ||
-			an.collisionsRate > collisionsRatelimit) {
+		if (an.fillingRate > fillingRateUpperLimit ||
+			an.collisionsRate > collisionsRateUpperlimit ||
+			an.fillingRate < fillingRateLowerLimit) {
 			return true;
 		}
 		return false;
 	}
 
+	CarOwnersList* getArray() { return arr; }
 
 };
+
 
 
 class ConsoleInterface {
@@ -653,22 +777,23 @@ public:
 			cout << element->ticketId << " ";
 			element = element->nextElement;
 		}
+		cout << endl;
 	}
 
 	static void OutputCarOwnersList(CarOwnersList list) {
 		CarOwner* element = list.firstOwner;
-		cout << "\nLIST OF OWNERS\n";
 		while (element) {
-			OutputCarOwner(*element);
 			cout << endl;
+			cout << element;
 			element = element->getNextOwner();
 		}
+		cout << endl;
 	}
 
 	static void OutputHashTable(OwnersHashTable table) {
 		int capacity = table.getCapacity();
 		for (int i = 0; i < capacity; i++) {
-			cout << i << " in table\n";
+			cout << "\n-------------------------------------------------\n\nHash=" << i << endl;
 			OutputCarOwnersList(table.GetOwnersByIndex(i));
 			cout << "\n";
 		}
@@ -678,12 +803,6 @@ public:
 		cout << &owner;
 	}
 
-	static void OutputTicketsListElements(TicketsListElement* tle) {
-		while (tle) {
-
-		}
-	}
-
 	static void OutputTicketFromTree(TicketsTreeElement* tree, int ticketId) {
 		Ticket t = FindTicket(tree, ticketId)->ticket;
 		cout << "id:\t" << t.getId()
@@ -691,6 +810,7 @@ public:
 			<< "\ntime:\t" << t.getTimestampStr()
 			<< "\npaid?\t" << (t.getIsPaid() ? "yes" : "no")
 			<< endl;
+		cout << endl;
 	}
 
 
@@ -711,60 +831,144 @@ class ConsoleInterfaceMenu {
 	enum UserScenarios { Initial, Menu };
 public:
 	static void InitialMenu() {
+		srand(time(0));
 		setlocale(LC_ALL, "rus");
+		ifstream fn;
+		int fileLength;
+
+		TicketsTreeElement* ticketsTree = new TicketsTreeElement(-1);
+		OwnersHashTable hashTable = OwnersHashTable();
+		bool initialised = false;
+
 
 		int scenario;
 
-		OwnersHashTable hashTable = OwnersHashTable();
-		TicketsTreeElement* ticketsTree = new TicketsTreeElement(Ticket(-1));
-
 		do {
-			if (hashTable.GetAnalytics().population != 0) {		// список задан
+			if (initialised) {		// список задан
 				system("cls");
 				cout
 					<< "\nЧто вы хотите сделать?\n"
-					<< "1. Вывести всю хэш-таблицу на экран\n"
-					<< "2. Найти в владельца хэш-таблице\n"
-					<< "3. Добавить владельца в хэш-таблицу\n"
-					<< "4. Удалить владельца из хэш-таблицы\n"
-					<< "5. Очистить хэш-таблицу\n"
-					<< "6. Найти штраф\n"
-					<< "7. Добавить штраф\n"
-					<< "8. Удалить штраф\n"
-					<< "9. Очистить штрафы\n"
-					<< "10.Выйти\n"
+					<< "1. Вывести хэш-таблицу на экран\n"
+					<< "2. Вывести аналитику таблицы на экран\n"
+					<< "3. Вывести дерево штрафов на экран\n"
+					<< "4. Найти в владельца хэш-таблице\n"
+					<< "5. Добавить владельца в хэш-таблицу\n"
+					<< "6. Удалить владельца из хэш-таблицы\n"
+					<< "7. Очистить хэш-таблицу\n"
+					<< "8. Найти штраф\n"
+					<< "9. Добавить штраф\n"
+					<< "10. Удалить штраф\n"
+					<< "11.Очистить штрафы\n"
+					<< "12.Выйти\n"
 					<< "> ";
 				scenario = InputUsersChoice(Menu);
 				switch (scenario) {
-				case 1:
-					
+				case 1: {
+					ConsoleInterface::OutputHashTable(hashTable);
 					system("pause");
 					break;
-				case 2:
-					
+				}
+				case 2: {
+					ConsoleInterface::OutputHashTableAnalytics(hashTable.GetAnalytics());
 					system("pause");
 					break;
-				case 3:
-					
-					break;
-				case 4:
+				}
+				case 3: {
+					PrintTree(ticketsTree);
 					system("pause");
 					break;
-				case 5:
+				}
+				case 4: {
+					bool found = false;
+					string name;
+					cout << "Введите имя для поиска > ";
+					cin >> name;
+					CarOwner* co = hashTable.GetOwnersByIndex(hashTable.Hash(name)).firstOwner;
+					while (co) {
+						if (co->getName() == name) {
+							found = true;
+							cout << "Найдена запись!" << endl << co;
+							break;
+						}
+						co = co->getNextOwner();
+					}
+					if (!found) { cout << "Запись с таким именем не найдена.\n"; }
 					system("pause");
 					break;
-				case 6:
+				}
+				case 5: {
+					cout << "Введите строку информации о водителе в соответствии со стандартом:" << endl;
+					cout << "name; birthday.day; birthday.month; birthday.year; phoneN; licenceId; licenceExp.day;"
+						<< "licenceExp.month; licenceExp.year; licencePlate; techPassport; gibddId; tickets" << endl;
+					CarOwner* co = new CarOwner();
+					cin >> co;
+					hashTable.InsertToTable(co);
+					cout << "Добавлена запись:\n" << co << endl;
 					system("pause");
 					break;
-				case 7:
+				}
+				case 6: {
+					string name;
+					cout << "Введите имя для удаления из таблицы > ";
+					cin >> name;
+					hashTable.DeleteFromTable(name);
+					cout << "Вхождение было удалено\n";
 					system("pause");
 					break;
-				case 8:
+				}
+				case 7: {
+					hashTable.DeleteArray(true);
+					cout << "Таблица владельцев была очищена\n";
 					system("pause");
 					break;
-				case 9:
+				}
+				case 8: {
+					int id;
+					cout << "Введите ИД штрафа для поиска > ";
+					cin >> id;
+					TicketsTreeElement* t = FindTicket(ticketsTree, id);
+					if (!t) {
+						cout << "Элемент не найден\n";
+					}
+					else {
+						cout << "Элемент найден:\n"
+							<< &(t->ticket);
+					}
 					system("pause");
 					break;
+				}
+				case 9: {
+					cout << "Введите строку информации о штрафе в соответствии со стандартом:" << endl;
+					cout << "id; timestamp.minute; timestamp.hour; timestamp.day; timestamp.month;"
+						<< " timestamp.year; licencePlate; isPaid" << endl;
+					Ticket* t = new Ticket();
+					cin >> t;
+					TreeRandomisedInsert(ticketsTree, *t);
+					delete t;
+					system("pause");
+					break;
+				}
+				case 10: {
+					int id;
+					cout << "Введите ИД штрафа для удаления > ";
+					cin >> id;
+					TicketsTreeElement* f = FindTicket(ticketsTree, id);
+					if (!f) {
+						cout << "Штраф не найден" << endl;
+					}
+					else {
+						cout << "Удаляется штраф:\n" << &(f->ticket) << endl;
+						TreeRemoveNode(ticketsTree, id);
+						cout << "Удаление завершено\n";
+					}
+					system("pause");
+					break;
+				}
+				case 11: {
+					EmptyTree(ticketsTree);
+					system("pause");
+					break;
+				}
 				}
 			}
 			else {					// список не задан
@@ -778,19 +982,79 @@ public:
 				switch (scenario)
 				{
 				case 1:
-					system("pause");
+					initialised = true;
 					break;
-
 				case 2:
-					system("pause");
-					break;
-				case 3:
+					cout << "Введите имя файла с владельцами > ";
+					string filename;
+					cin >> filename;
+					fn.open(filename);
+
+					if (!fn.is_open()) {
+						cout << "Файл не найден\n";
+						break;
+					}
+					if (fn.eof()) {
+						cout << "Файл пустой\n";
+						break;
+					}
+					fn >> fileLength;
+					if (fileLength == 0) {
+						cout << "В файле нет данных\n";
+						break;
+					}
+					cout << "Количество данных для прочтения: " << fileLength << endl;
+
+
+					hashTable.DeleteArray(true);
+					hashTable.Rehash(fileLength * 2);
+
+					for (int i = 0; i < fileLength; i++) {
+						CarOwner* co = new CarOwner();
+						fn >> co;
+						hashTable.InsertToTable(co);
+					}
+					fn.close();
+					cout << "Данные о владельцах прочитаны. Информация о хэш-таблице:\n";
+					ConsoleInterface::OutputHashTableAnalytics(hashTable.GetAnalytics());
+
+
+
+					cout << "\n\nВведите имя файла со штрафами > ";
+
+					cin >> filename;
+					fn.open(filename);
+
+					if (!fn.is_open()) {
+						cout << "Файл не найден\n";
+						break;
+					}
+					if (fn.eof()) {
+						cout << "Файл пустой\n";
+						break;
+					}
+					fn >> fileLength;
+					if (fileLength == 0) {
+						cout << "В файле нет данных\n";
+						break;
+					}
+					cout << "Количество данных для прочтения: " << fileLength << endl;
+
+					for (int i = 0; i < fileLength; i++) {
+						Ticket* t = new Ticket();
+						fn >> t;
+						ticketsTree = TreeRandomisedInsert(ticketsTree, *t);
+						delete t;
+					}
+					fn.close();
+					cout << "Данные о штрафах прочитаны\n";
+					initialised = true;
 					system("pause");
 					break;
 				}
 			}
-		} while (scenario != 10 && hashTable.GetAnalytics().population
-			|| scenario != 2 && hashTable.GetAnalytics().population);
+		} while (scenario != 12 && initialised
+			|| scenario != 3 && !initialised);
 	}
 
 	static int InputUsersChoice(UserScenarios scenario) {
@@ -803,7 +1067,7 @@ public:
 			}
 		}
 		else if (scenario == Menu) {
-			while (variant < 1 || variant>10) {
+			while (variant < 1 || variant>12) {
 				cout << "Wrong input. Try again > ";
 				cin >> variant;
 			}
@@ -815,148 +1079,69 @@ public:
 
 int main()
 {
+
 	/*
-	int data[5] = { 1,2,3,4,5 };
-	int n = 5;
-	TicketsList list = TicketsList(data, n);
-	ConsoleInterface::OutputTicketsList(list);
-	list.DeleteList();
+	srand(time(0));
+	setlocale(LC_ALL, "rus");
 
+	ifstream fn;
+	fn.open("tickets.txt");
+	int n;
+	if (!fn.is_open())
+		cout << "пипяо 1\n";
+	if (fn.eof())
+		cout << "пипяо 2\n";
+	fn >> n;
+	if (n == 0)
+		cout << "пипяо 3\n";
+	cout << "Количество строк:  " << n << endl;
 
-	OwnersHashTable ht = OwnersHashTable(10);
-	string s1 = "Eldar";
-	string s2 = "Nail";
-	string s3 = "Andrey";
-	string s4 = "Anton";
-	string s5 = "Nikita";
-	string s6 = "Alina";
-	string s7 = "Eldar";
+	TicketsTreeElement* tree = new TicketsTreeElement(-1);
+	for (int i = 0; i < n; i++) {
+		Ticket* t = new Ticket();
+		fn >> t;
+		tree = TreeRandomisedInsert(tree, *t);
+		delete t;
+	}
+	fn.close();
 
-	CarOwner* c1 = new CarOwner(s1);
-	CarOwner* c2 = new CarOwner(s2);
-	CarOwner* c3 = new CarOwner(s3);
-	CarOwner* c4 = new CarOwner(s4);
-	CarOwner* c5 = new CarOwner(s5);
-	CarOwner* c6 = new CarOwner(s6);
-	CarOwner* c7 = new CarOwner(s7);
+	//PrintTree(tree);
 
+	fn.open("owners.txt");
 
+	if (!fn.is_open())
+		cout << "пипяо 1\n";
+	if (fn.eof())
+		cout << "пипяо 2\n";
+	fn >> n;
+	if (n == 0)
+		cout << "пипяо 3\n";
+	cout << "Количество строк:  " << n << endl;
 
-
-	ht.InsertToTable(c1);
-	ht.InsertToTable(c2);
-	ht.InsertToTable(c3);
-	ht.InsertToTable(c4);
-	ht.InsertToTable(c5);
-	ht.InsertToTable(c6);
-	ht.InsertToTable(c7);
-
-	ConsoleInterface::OutputHashTable(ht);
-
-	cout << "\n\ndeleting " << s2 << endl;
-
-	ht.DeleteFromTable(s2);
-
-	ConsoleInterface::OutputHashTable(ht);
-
-	ht.DeleteArray();
-	*/
-
-	/* HASH TABLE DEMO
-	CarOwner* c1 = new CarOwner("Eldar", tm{ 0,0,0,1,0,21 },
-		"+79257093991", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222, new int[2]{ 1,2 }, 2);
-	CarOwner* c2 = new CarOwner("Nail", tm{ 0,0,0,1,0,22 },
-		"+79257093992", 123, tm{ 0,0,0,2,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c3 = new CarOwner("Alina", tm{ 0,0,0,1,0,23 },
-		"+79257093993", 123, tm{ 0,0,0,3,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c4 = new CarOwner("Anton", tm{ 0,0,0,1,0,24 },
-		"+79257093994", 123, tm{ 0,0,0,4,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c5 = new CarOwner("Pasha", tm{ 0,0,0,1,0,25 },
-		"+79257093995", 123, tm{ 0,0,0,5,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c6 = new CarOwner("Andrey", tm{ 0,0,0,1,0,26 },
-		"+79257093996", 123, tm{ 0,0,0,6,1,123 }, "o944xe124",
-		"YPP122", 1222);
-
-	OwnersHashTable ht = OwnersHashTable(10);
-	ht.InsertToTable(c1);
-	ht.InsertToTable(c2);
-	ht.InsertToTable(c3);
-	ht.InsertToTable(c4);
-	ht.InsertToTable(c5);
-	ht.InsertToTable(c6);
-	ConsoleInterface::OutputHashTable(ht);
-
-	HashTableAnalytics an = ht.GetAnalytics();
-	ConsoleInterface::OutputHashTableAnalytics(an);
-	ht.DeleteFromTable("Alina");
-	ConsoleInterface::OutputHashTable(ht);
-	an = ht.GetAnalytics();
-	ConsoleInterface::OutputHashTableAnalytics(an);
-
-	Ticket t1 = Ticket(0, tm{ 0,13,14,14,1,45 }, "0944xe124");
-	TicketsTreeElement* tree = new TicketsTreeElement(t1);
-
-	Ticket t2 = Ticket(1, tm{ 0,3,4,1,4,47 }, "0944xe124");
-	tree = TreeRandomisedInsert(tree, t2);
-
-
-	cout << endl << endl;
-
-	ConsoleInterface::OutputTicketFromTree(tree, 1);
-	cout << endl;
-	ConsoleInterface::OutputTicketFromTree(tree, 0);
-
+	OwnersHashTable hashT = OwnersHashTable(n*2);
+	for (int i = 0; i < n; i++) {
+		CarOwner* co = new CarOwner();
+		fn >> co;
+		hashT.InsertToTable(co);
+	}
+	ConsoleInterface::OutputHashTableAnalytics(hashT.GetAnalytics());
 
 	*/
+	ConsoleInterfaceMenu::InitialMenu();
+	/*
+	setlocale(LC_ALL, "rus");
+	string s1 = "Anton Petrov";
+	string s2 = "Ivan Nikolaev";
+	int base1 = 12;
+	int base2 = 244;
 
-	/* CAR OWNERS LIST DEMO
-	*
-	*
-	*
-	CarOwner* c1 = new CarOwner("Eldar", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c2 = new CarOwner("Nail", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c3 = new CarOwner("Alina", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c4 = new CarOwner("Anton", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c5 = new CarOwner("Pasha", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-	CarOwner* c6 = new CarOwner("Andrey", tm{ 0,0,0,1,0,20 },
-		"+79257093995", 123, tm{ 0,0,0,1,1,123 }, "o944xe124",
-		"YPP122", 1222);
-
-	CarOwnersList cl;
-	cl.InsertToList(c1);
-	cl.InsertToList(c2);
-	cl.InsertToList(c3);
-	cl.InsertToList(c4);
-	cl.InsertToList(c5);
-	cl.InsertToList(c6);
-
-	cout << cl.GetLength() << endl;
-
-	ConsoleInterface::OutputCarOwnersList(cl);
-	*/
-
-	CarOwner* c1 = new CarOwner();
-	cin >> c1;
-
-	cout << c1;
-	cout << endl;
-	Ticket* t1 = new Ticket();
-	cin >> t1;
-	cout << endl;
-	cout << t1;
+	cout << "Хэш строки \"" << s1 << "\"  при длине массива " << base1
+		<< "  равен " << OwnersHashTable::Hash(s1, base1) << endl;
+	cout << "Хэш строки \"" << s1 << "\"  при длине массива " << base2
+		<< " равен " << OwnersHashTable::Hash(s1, base2) << endl;
+	cout << "Хэш строки \"" << s2 << "\" при длине массива " << base1
+		<< "  равен " << OwnersHashTable::Hash(s2, base1) << endl;
+	cout << "Хэш строки \"" << s2 << "\" при длине массива " << base2
+		<< " равен " << OwnersHashTable::Hash(s2, base2) << endl;
+		*/
 }
