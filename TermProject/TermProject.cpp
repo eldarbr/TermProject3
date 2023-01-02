@@ -458,7 +458,7 @@ TicketsTreeElement* RotateTreeRight(TicketsTreeElement* tree)
 }
 
 
-TicketsTreeElement* RotateTreeLeft(TicketsTreeElement* tree) // левый поворот вокруг узла q
+TicketsTreeElement* RotateTreeLeft(TicketsTreeElement* tree)
 {
 	TicketsTreeElement* p = tree->rightChild;
 	if (!p) return tree;
@@ -500,7 +500,7 @@ TicketsTreeElement* TreeRandomisedInsert(TicketsTreeElement* p, Ticket t)
 }
 
 
-TicketsTreeElement* TreeJoinNodes(TicketsTreeElement* p, TicketsTreeElement* q) // объединение двух деревьев
+TicketsTreeElement* TreeJoinNodes(TicketsTreeElement* p, TicketsTreeElement* q)
 {
 	if (!p) return q;
 	if (!q) return p;
@@ -531,7 +531,7 @@ void EmptyTree(TicketsTreeElement* p) {
 	}
 }
 
-TicketsTreeElement* TreeRemoveNode(TicketsTreeElement* p, int id) // удаление из дерева p первого найденного узла с ключом k 
+TicketsTreeElement* TreeRemoveNode(TicketsTreeElement* p, int id)
 {
 	if (!p) return p;
 	if (p->ticket.getId() == id)
@@ -1079,69 +1079,5 @@ public:
 
 int main()
 {
-
-	/*
-	srand(time(0));
-	setlocale(LC_ALL, "rus");
-
-	ifstream fn;
-	fn.open("tickets.txt");
-	int n;
-	if (!fn.is_open())
-		cout << "пип€о 1\n";
-	if (fn.eof())
-		cout << "пип€о 2\n";
-	fn >> n;
-	if (n == 0)
-		cout << "пип€о 3\n";
-	cout << " оличество строк:  " << n << endl;
-
-	TicketsTreeElement* tree = new TicketsTreeElement(-1);
-	for (int i = 0; i < n; i++) {
-		Ticket* t = new Ticket();
-		fn >> t;
-		tree = TreeRandomisedInsert(tree, *t);
-		delete t;
-	}
-	fn.close();
-
-	//PrintTree(tree);
-
-	fn.open("owners.txt");
-
-	if (!fn.is_open())
-		cout << "пип€о 1\n";
-	if (fn.eof())
-		cout << "пип€о 2\n";
-	fn >> n;
-	if (n == 0)
-		cout << "пип€о 3\n";
-	cout << " оличество строк:  " << n << endl;
-
-	OwnersHashTable hashT = OwnersHashTable(n*2);
-	for (int i = 0; i < n; i++) {
-		CarOwner* co = new CarOwner();
-		fn >> co;
-		hashT.InsertToTable(co);
-	}
-	ConsoleInterface::OutputHashTableAnalytics(hashT.GetAnalytics());
-
-	*/
 	ConsoleInterfaceMenu::InitialMenu();
-	/*
-	setlocale(LC_ALL, "rus");
-	string s1 = "Anton Petrov";
-	string s2 = "Ivan Nikolaev";
-	int base1 = 12;
-	int base2 = 244;
-
-	cout << "’эш строки \"" << s1 << "\"  при длине массива " << base1
-		<< "  равен " << OwnersHashTable::Hash(s1, base1) << endl;
-	cout << "’эш строки \"" << s1 << "\"  при длине массива " << base2
-		<< " равен " << OwnersHashTable::Hash(s1, base2) << endl;
-	cout << "’эш строки \"" << s2 << "\" при длине массива " << base1
-		<< "  равен " << OwnersHashTable::Hash(s2, base1) << endl;
-	cout << "’эш строки \"" << s2 << "\" при длине массива " << base2
-		<< " равен " << OwnersHashTable::Hash(s2, base2) << endl;
-		*/
 }
